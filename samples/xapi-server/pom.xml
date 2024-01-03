@@ -4,32 +4,19 @@
   <parent>
     <groupId>dev.learning.xapi.samples</groupId>
     <artifactId>xapi-samples-build</artifactId>
-    <version>1.1.5-SNAPSHOT</version>
+    <version>1.1.16-SNAPSHOT</version>
   </parent>
   <artifactId>xapi-server</artifactId>
   <name>xAPI Server Sample</name>
   <description>Basic xAPI Statement Resource implementation</description>
   <dependencies>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <!-- If the hibernate validator is on the class path the model will be validated -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-validation</artifactId>
+      <groupId>dev.learning.xapi</groupId>
+      <artifactId>xapi-model-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>dev.learning.xapi</groupId>
-      <artifactId>xapi-model</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>dev.learning.xapi</groupId>
-      <artifactId>xapi-model-spring-boot-autoconfigure</artifactId>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
@@ -38,7 +25,7 @@
     <dependency>
       <groupId>io.hypersistence</groupId>
       <artifactId>hypersistence-utils-hibernate-60</artifactId>
-      <version>3.3.2</version>
+      <version>3.6.1</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

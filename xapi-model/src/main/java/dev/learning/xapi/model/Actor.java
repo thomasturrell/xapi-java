@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import dev.learning.xapi.model.validation.constraints.HasScheme;
 import dev.learning.xapi.model.validation.constraints.Mbox;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -29,12 +30,12 @@ import lombok.experimental.SuperBuilder;
  * @see <a href="https://github.com/adlnet/xAPI-Spec/blob/master/xAPI-Data.md#actor">xAPI Actor</a>
  */
 @Getter
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @ToString
 @NoArgsConstructor
 @EqualsAndHashCode(exclude = "name")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "objectType", defaultImpl = Agent.class,
-    include = As.PROPERTY)
+    visible = true, include = As.EXISTING_PROPERTY)
 @JsonSubTypes({@JsonSubTypes.Type(value = Agent.class, name = "Agent"),
     @JsonSubTypes.Type(value = Agent.class, name = "Person"),
     @JsonSubTypes.Type(value = Group.class, name = "Group")})
@@ -61,6 +62,7 @@ public abstract class Actor implements StatementObject, SubStatementObject {
   /**
    * An openID.
    */
+  @HasScheme
   URI openid;
 
   /**

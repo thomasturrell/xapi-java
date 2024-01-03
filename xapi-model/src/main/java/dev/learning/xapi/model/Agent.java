@@ -5,6 +5,7 @@
 package dev.learning.xapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,12 +20,14 @@ import lombok.experimental.SuperBuilder;
  * @see <a href="https://github.com/adlnet/xAPI-Spec/blob/master/xAPI-Data.md#agent">xAPI Agent</a>
  */
 @Getter
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @JsonIgnoreProperties(value = {"firstName", "lastName"})
 public class Agent extends Actor {
+
+  private AgentObjectType objectType;
 
   // **Warning** do not add fields that are not required by the xAPI specification.
 
@@ -35,6 +38,21 @@ public class Agent extends Actor {
       extends Actor.Builder<C, B> {
 
     // This static class extends the lombok builder.
+
+  }
+
+  /**
+   * This enumeration class represents the optional xAPI Agent object type.
+   *
+   * @author István Rátkai (Selindek)
+   */
+  public enum AgentObjectType {
+
+    /**
+     * Agent object type.
+     */
+    @JsonProperty("Agent")
+    AGENT;
 
   }
 

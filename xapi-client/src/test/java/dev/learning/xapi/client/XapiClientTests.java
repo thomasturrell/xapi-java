@@ -3,6 +3,7 @@
  */
 package dev.learning.xapi.client;
 
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -21,7 +22,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -33,6 +36,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest;
+import org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError;
 
 /**
  * XapiClient Tests.
@@ -102,7 +107,7 @@ class XapiClientTests {
     mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK")
 
         .setBody(
-            "{\"actor\":{\"objectType\":\"Agent\",\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}")
+            "{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}")
         .addHeader("Content-Type", "application/json; charset=utf-8"));
 
     // When Getting Statement
@@ -203,7 +208,7 @@ class XapiClientTests {
 
     // Then Body Is Expected
     assertThat(recordedRequest.getBody().readUtf8(), is(
-        "[{\"actor\":{\"objectType\":\"Agent\",\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}},{\"actor\":{\"objectType\":\"Agent\",\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/passed\",\"display\":{\"und\":\"passed\"}},\"object\":{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}]"));
+        "[{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}},{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/passed\",\"display\":{\"und\":\"passed\"}},\"object\":{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}]"));
   }
 
   @Test
@@ -233,7 +238,7 @@ class XapiClientTests {
 
     // Then Body Is Expected
     assertThat(recordedRequest.getBody().readUtf8(), is(
-        "[{\"actor\":{\"objectType\":\"Agent\",\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}},{\"actor\":{\"objectType\":\"Agent\",\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/passed\",\"display\":{\"und\":\"passed\"}},\"object\":{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}]"));
+        "[{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}},{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/passed\",\"display\":{\"und\":\"passed\"}},\"object\":{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}]"));
   }
 
   @Test
@@ -347,7 +352,7 @@ class XapiClientTests {
 
     // Then Body Is Expected
     assertThat(recordedRequest.getBody().readUtf8(), is(
-        "{\"actor\":{\"objectType\":\"Agent\",\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}"));
+        "{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/attempted\",\"display\":{\"und\":\"attempted\"}},\"object\":{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}}"));
   }
 
   @Test
@@ -374,6 +379,67 @@ class XapiClientTests {
 
     // Then Content Type Header Is Application Json
     assertThat(recordedRequest.getHeader("content-type"), is("application/json"));
+  }
+
+  @Test
+  void givenApiResponseIsEmptyWhenPostingStatementThenMissingResponseBodyExceptionIsThrown() {
+
+    // Given Api Response Is Empty
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setHeader("Content-Type",
+        "application/json"));
+
+    // When Posting Statement
+    final var response = client.postStatement(r -> r
+        .statement(s -> s.agentActor(a -> a.name("A N Other").mbox("mailto:another@example.com"))
+
+            .verb(Verb.ATTEMPTED)
+
+            .activityObject(o -> o.id("https://example.com/activity/simplestatement")
+                .definition(d -> d.addName(Locale.ENGLISH, "Simple Statement")))));
+
+    // Then MissingResponseBodyException Is Thrown
+    assertThrows(MissingResponseBodyException.class, () -> response.block());
+
+  }
+
+  @Test
+  void givenApiResponseIsBadRequestWhenPostingStatementThenBadRequestIsThrown() {
+
+    // Given Api Response Is Bad Request
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 400 Bad Request"));
+
+    // When Posting Statement
+    final var response = client.postStatement(r -> r
+        .statement(s -> s.agentActor(a -> a.name("A N Other").mbox("mailto:another@example.com"))
+
+            .verb(Verb.ATTEMPTED)
+
+            .activityObject(o -> o.id("https://example.com/activity/simplestatement")
+                .definition(d -> d.addName(Locale.ENGLISH, "Simple Statement")))));
+
+    // Then BadRequest Is Thrown
+    assertThrows(BadRequest.class, () -> response.block());
+
+  }
+
+  @Test
+  void givenApiResponseIsInternalServerErrorWhenPostingStatementThenInternalServerErrorIsThrown() {
+
+    // Given Api Response Is Internal Server Error
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 500 Internal Server Error"));
+
+    // When Posting Statement
+    final var response = client.postStatement(r -> r
+        .statement(s -> s.agentActor(a -> a.name("A N Other").mbox("mailto:another@example.com"))
+
+            .verb(Verb.ATTEMPTED)
+
+            .activityObject(o -> o.id("https://example.com/activity/simplestatement")
+                .definition(d -> d.addName(Locale.ENGLISH, "Simple Statement")))));
+
+    // Then InternalServerError Is Thrown
+    assertThrows(InternalServerError.class, () -> response.block());
+
   }
 
   // Posting a Signed Statement
@@ -515,7 +581,7 @@ class XapiClientTests {
 
         .agent(a -> a.name("A N Other").mbox("mailto:another@example.com"))
 
-        .verb("http://adlnet.gov/expapi/verbs/answered")
+        .verb(Verb.ANSWERED)
 
         .activity("https://example.com/activity/1")
 
@@ -543,7 +609,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/statements?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&verb=http%3A%2F%2Fadlnet.gov%2Fexpapi%2Fverbs%2Fanswered&activity=https%3A%2F%2Fexample.com%2Factivity%2F1&since=2016-01-01T00%3A00%3A00Z&until=2018-01-01T00%3A00%3A00Z&registration=dbf5d9e8-d2aa-4d57-9754-b11e3f195fe3&related_activities=true&related_agents=true&limit=10&format=canonical&attachments=true&ascending=true"));
+        "/statements?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&verb=http%3A%2F%2Fadlnet.gov%2Fexpapi%2Fverbs%2Fanswered&activity=https%3A%2F%2Fexample.com%2Factivity%2F1&since=2016-01-01T00%3A00%3A00Z&until=2018-01-01T00%3A00%3A00Z&registration=dbf5d9e8-d2aa-4d57-9754-b11e3f195fe3&related_activities=true&related_agents=true&limit=10&format=canonical&attachments=true&ascending=true"));
   }
 
   @Test
@@ -562,7 +628,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/statements?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
+        "/statements?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
   }
 
   @Test
@@ -680,7 +746,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
   }
 
   @Test
@@ -721,7 +787,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&stateId=bookmark"));
   }
 
   @Test
@@ -818,7 +884,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
   }
 
   @Test
@@ -915,7 +981,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&stateId=bookmark"));
   }
 
   // Put Single State
@@ -966,7 +1032,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
   }
 
   @Test
@@ -1063,7 +1129,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&stateId=bookmark"));
   }
 
   // Deleting Single State
@@ -1106,7 +1172,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
   }
 
   @Test
@@ -1145,7 +1211,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6&stateId=bookmark"));
   }
 
   // Getting Multiple States
@@ -1192,7 +1258,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6"));
   }
 
   @Test
@@ -1234,7 +1300,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
   }
 
   @Test
@@ -1321,7 +1387,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&registration=67828e3a-d116-4e18-8af3-2d2c59e27be6"));
   }
 
   @Test
@@ -1360,7 +1426,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
+        "/activities/state?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1&agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
   }
 
   // Get Single Agent Profile
@@ -1399,7 +1465,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/agents/profile?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
+        "/agents/profile?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
   }
 
   // Delete Single Agent Profile
@@ -1440,7 +1506,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/agents/profile?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
+        "/agents/profile?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
   }
 
   // Put Single Agent Profile
@@ -1483,7 +1549,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/agents/profile?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
+        "/agents/profile?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
   }
 
   @Test
@@ -1596,7 +1662,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/agents/profile?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
+        "/agents/profile?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&profileId=greeting"));
   }
 
   @Test
@@ -1706,7 +1772,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/agents/profile?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
+        "/agents/profile?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
   }
 
   @Test
@@ -1728,7 +1794,7 @@ class XapiClientTests {
 
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(), is(
-        "/agents/profile?agent=%7B%22objectType%22%3A%22Agent%22%2C%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&since=2016-01-01T00%3A00%3A00Z"));
+        "/agents/profile?agent=%7B%22name%22%3A%22A%20N%20Other%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D&since=2016-01-01T00%3A00%3A00Z"));
   }
 
   // Get Activity
@@ -1786,7 +1852,7 @@ class XapiClientTests {
     mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK")
 
         .setBody(
-            "{\"objectType\":\"Activity\",\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}")
+            "{\"id\":\"https://example.com/activity/simplestatement\",\"definition\":{\"name\":{\"en\":\"Simple Statement\"}}}")
         .addHeader("Content-Type", "application/json; charset=utf-8"));
 
     // When Getting Activity
@@ -1825,8 +1891,8 @@ class XapiClientTests {
     final var recordedRequest = mockWebServer.takeRequest();
 
     // Then Path Is Expected
-    assertThat(recordedRequest.getPath(), is(
-        "/agents?agent=%7B%22objectType%22%3A%22Agent%22%2C%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
+    assertThat(recordedRequest.getPath(),
+        is("/agents?agent=%7B%22mbox%22%3A%22mailto%3Aanother%40example.com%22%7D"));
   }
 
   @Test
@@ -2241,6 +2307,285 @@ class XapiClientTests {
     // Then Path Is Expected
     assertThat(recordedRequest.getPath(),
         is("/activities/profile?activityId=https%3A%2F%2Fexample.com%2Factivity%2F1"));
+  }
+
+  @Test
+  void whenGettingStatementIteratorViaMultipeResponsesThenResultIsExpected()
+      throws InterruptedException {
+    final var body1 = """
+        {
+          "statements" : [
+            {
+              "id" : "c0aaea0b-252b-4d9d-b7ad-46c541572570"
+            }
+          ],
+          "more" : "/statements/more/1"
+        }
+        """;
+    final var body2 = """
+        {
+          "statements" : [
+            {
+              "id" : "4ed0209a-f50f-4f57-8602-ba5f981d211a"
+            }
+          ],
+          "more" : ""
+        }
+        """;
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body1)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body2)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator Via Multipe Responses
+    final var iterator = client.getStatementIterator().block();
+
+    // Then Result Is Expected
+    assertThat(iterator.hasNext(), is(true));
+    assertThat(iterator.next().getId(),
+        is(UUID.fromString("c0aaea0b-252b-4d9d-b7ad-46c541572570")));
+    assertThat(iterator.hasNext(), is(true));
+    assertThat(iterator.next().getId(),
+        is(UUID.fromString("4ed0209a-f50f-4f57-8602-ba5f981d211a")));
+    assertThat(iterator.hasNext(), is(false));
+
+  }
+
+  @Test
+  void givenApiResponseIsEmptyWhenGettingStatementIteratorThenMissingResponseBodyExceptionIsThrown() {
+
+    // Given Api Response Is Empty
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setHeader("Content-Type",
+        "application/json"));
+
+    // When Getting Statement Iterator
+    final var response = client.getStatementIterator();
+
+    // Then MissingResponseBodyException Is Thrown
+    assertThrows(MissingResponseBodyException.class, () -> response.block());
+
+  }
+
+  @Test
+  void whenGettingStatementIteratorViaMultipeResponsesThenRequestsAreExpected()
+      throws InterruptedException {
+    final var body1 = """
+        {
+          "statements" : [
+            {
+              "id" : "c0aaea0b-252b-4d9d-b7ad-46c541572570"
+            }
+          ],
+          "more" : "/statements/more/1"
+        }
+        """;
+    final var body2 = """
+        {
+          "statements" : [
+            {
+              "id" : "4ed0209a-f50f-4f57-8602-ba5f981d211a"
+            }
+          ],
+          "more" : ""
+        }
+        """;
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body1)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body2)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator Via Multipe Responses
+    final var iterator = client.getStatementIterator().block();
+    iterator.next();
+    iterator.next();
+
+    // Then Requests Are Expected
+    assertThat(mockWebServer.takeRequest().getPath(), is("/statements"));
+    assertThat(mockWebServer.takeRequest().getPath(), is("/statements/more/1"));
+
+  }
+
+  @Test
+  void whenGettingStatementIteratorThenRequestsAreExpected() throws InterruptedException {
+    final var body1 = """
+        {
+          "statements" : [
+            {
+              "id" : "c0aaea0b-252b-4d9d-b7ad-46c541572570"
+            }
+          ],
+          "more" : "/statements/more/1"
+        }
+        """;
+    final var body2 = """
+        {
+          "statements" : [
+            {
+              "id" : "4ed0209a-f50f-4f57-8602-ba5f981d211a"
+            }
+          ],
+          "more" : ""
+        }
+        """;
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body1)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body2)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator
+    client.getStatementIterator().block();
+
+    // Then Requests Are Expected
+    assertThat(mockWebServer.takeRequest().getPath(), is("/statements"));
+    assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS), is(nullValue()));
+
+  }
+
+  @Test
+  void whenGettingStatementIteratorAndProcessingItAsStreamThenRequestsAreExpected()
+      throws InterruptedException {
+    final var body1 = """
+        {
+          "statements" : [
+            {
+              "id" : "c0aaea0b-252b-4d9d-b7ad-46c541572570"
+            },
+            {
+              "id" : "940a3f5c-1f31-47c7-82fc-5979e2786c02"
+            }
+          ],
+          "more" : "/statements/more/1"
+        }
+        """;
+    final var body2 = """
+        {
+          "statements" : [
+            {
+              "id" : "4ed0209a-f50f-4f57-8602-ba5f981d211a"
+            }
+          ],
+          "more" : ""
+        }
+        """;
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body1)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body2)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator
+    final var iterator = client.getStatementIterator().block();
+
+    // And Processing it As Stream
+    iterator.toStream().limit(1).forEach(s -> {
+    });
+
+    // Then Requests Are Expected
+    assertThat(mockWebServer.takeRequest().getPath(), is("/statements"));
+    assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS), is(nullValue()));
+
+  }
+
+  @Test
+  void givenEmptyStatementResultWhenGettingStatementIteratorThenHasNextIsFalse()
+      throws InterruptedException {
+
+    // Given Empty StatementResult
+    final var body = """
+        {
+          "statements" : [
+          ],
+          "more" : ""
+        }
+        """;
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator
+    final var iterator = client.getStatementIterator().block();
+
+    // Then HasNext Is False
+    assertThat(iterator.hasNext(), is(false));
+
+  }
+
+  @Test
+  void givenEmptyResponseWhenGettingStatementIteratorThenHasNextIsFalse()
+      throws InterruptedException {
+
+    // Given Empty Response
+    // This response is technically invalid by the xAPI specification, but we cannot assume
+    // conformance.
+    // conformance of the commercial LRSs.
+    final var body = "{}";
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator
+    final var iterator = client.getStatementIterator().block();
+
+    // Then HasNext Is False
+    assertThat(iterator.hasNext(), is(false));
+
+  }
+
+  @Test
+  void givenEmptyResponseWhenGettingStatementIteratorThenNextThrowsAnException()
+      throws InterruptedException {
+
+    // Given Empty Response
+    final var body = """
+        {
+          "statements" : [
+          ],
+          "more" : ""
+        }
+        """;
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK").setBody(body)
+        .addHeader("Content-Type", "application/json; charset=utf-8"));
+
+    // When Getting StatementIterator
+    final var iterator = client.getStatementIterator().block();
+
+    // Then Next Throws An Exception
+    assertThrows(NoSuchElementException.class, () -> iterator.next());
+
+  }
+
+  @Test
+  void whenVoidingStatementThenBodyIsExpected() throws InterruptedException {
+
+    mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK")
+        .setBody("[\"2eb84e56-441a-492c-9d7b-f8e9ddd3e15d\"]")
+        .addHeader("Content-Type", "application/json"));
+
+    final var attemptedStatement = Statement.builder()
+
+        .id(UUID.fromString("175c9264-692f-4108-9b7d-0ba64bd59ac3"))
+
+        .agentActor(a -> a.name("A N Other").mbox("mailto:another@example.com"))
+
+        .verb(Verb.ATTEMPTED)
+
+        .activityObject(o -> o.id("https://example.com/activity/simplestatement")
+            .definition(d -> d.addName(Locale.ENGLISH, "Simple Statement")))
+
+        .build();
+
+    // When Voiding Statement
+    client.voidStatement(attemptedStatement).block();
+
+    final var recordedRequest = mockWebServer.takeRequest();
+
+    // Then Body Is Expected
+    assertThat(recordedRequest.getBody().readUtf8(), is(
+        "{\"actor\":{\"name\":\"A N Other\",\"mbox\":\"mailto:another@example.com\"},\"verb\":{\"id\":\"http://adlnet.gov/expapi/verbs/voided\",\"display\":{\"und\":\"voided\"}},\"object\":{\"id\":\"175c9264-692f-4108-9b7d-0ba64bd59ac3\",\"objectType\":\"StatementRef\"}}"));
   }
 
   @Getter

@@ -4,6 +4,9 @@
 
 package dev.learning.xapi.model;
 
+import com.fasterxml.jackson.annotation.JsonMerge;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.learning.xapi.model.validation.constraints.HasScheme;
 import dev.learning.xapi.model.validation.constraints.ValidActivityDefinition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,10 +32,13 @@ import lombok.Value;
 @EqualsAndHashCode(exclude = "definition")
 public class Activity implements StatementObject, SubStatementObject {
 
+  private ActivityObjectType objectType;
+
   /**
    * An identifier for a single unique Activity.
    */
   @NotNull
+  @HasScheme
   private URI id;
 
   /**
@@ -40,6 +46,7 @@ public class Activity implements StatementObject, SubStatementObject {
    */
   @Valid
   @ValidActivityDefinition
+  @JsonMerge
   private ActivityDefinition definition;
 
   // **Warning** do not add fields that are not required by the xAPI specification.
@@ -50,7 +57,7 @@ public class Activity implements StatementObject, SubStatementObject {
    * @param id The identifier of the Activity.
    */
   public Activity(String id) {
-
+    this.objectType = null;
     this.id = URI.create(id);
     this.definition = null;
   }
@@ -127,6 +134,21 @@ public class Activity implements StatementObject, SubStatementObject {
 
       return this;
     }
+
+  }
+
+  /**
+   * This enumeration class represents the optional xAPI Activity object type.
+   *
+   * @author István Rátkai (Selindek)
+   */
+  public enum ActivityObjectType {
+
+    /**
+     * Activity object type.
+     */
+    @JsonProperty("Activity")
+    ACTIVITY;
 
   }
 

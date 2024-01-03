@@ -7,13 +7,22 @@ package dev.learning.xapi.model;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.integration.test.matcher.MapContentMatchers.hasAllEntries;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import dev.learning.xapi.jackson.XapiStrictLocaleModule;
+import dev.learning.xapi.model.validation.constraints.HasScheme;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +38,8 @@ import org.springframework.util.ResourceUtils;
 class ActivityTests {
 
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+  private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
   @Test
   void whenDeserializingActivityThenResultIsInstanceOfActivity() throws Exception {
@@ -92,8 +103,8 @@ class ActivityTests {
     final var result = objectMapper.readTree(objectMapper.writeValueAsString(activity));
 
     // Then Result Is Equal To Expected Json
-    assertThat(result, is((objectMapper
-        .readTree(ResourceUtils.getFile("classpath:activity/activity_with_object_type.json")))));
+    assertThat(result,
+        is((objectMapper.readTree(ResourceUtils.getFile("classpath:activity/activity.json")))));
 
   }
 
@@ -114,7 +125,7 @@ class ActivityTests {
 
     // Then Result Is Expected
     assertThat(result, is(
-        "Activity(id=http://www.example.co.uk/exampleactivity, definition=ActivityDefinition(name=null, description={en_US=A simple Experience API statement. Note that the LRS does not need to have any prior information about the Actor (learner), the verb, or the Activity/object.}, type=null, moreInfo=null, interactionType=null, correctResponsesPattern=null, choices=null, scale=null, source=null, target=null, steps=null, extensions=null))"));
+        "Activity(objectType=null, id=http://www.example.co.uk/exampleactivity, definition=ActivityDefinition(name=null, description={en_US=A simple Experience API statement. Note that the LRS does not need to have any prior information about the Actor (learner), the verb, or the Activity/object.}, type=null, moreInfo=null, interactionType=null, correctResponsesPattern=null, choices=null, scale=null, source=null, target=null, steps=null, extensions=null))"));
 
   }
 
@@ -156,6 +167,92 @@ class ActivityTests {
 
     Assertions.assertThrows(InvalidFormatException.class, () -> objectMapper
         .registerModule(new XapiStrictLocaleModule()).readValue(json, Activity.class));
+
+  }
+
+  @Test
+  void whenMergingActivitiesWithActivityDefinitionsWithNamesThenMergedNameIsExpected()
+      throws IOException {
+
+    final var activity1 = Activity.builder().definition(d -> d.addName(Locale.US, "Color")).build();
+
+    final var x = objectMapper
+        .valueToTree(Activity.builder().definition(d -> d.addName(Locale.UK, "Colour")).build());
+
+    final var expected = new LanguageMap();
+    expected.put(Locale.UK, "Colour");
+    expected.put(Locale.US, "Color");
+
+    // When Merging Activities With ActivityDefinitions With Names
+    final var merged = (Activity) objectMapper.readerForUpdating(activity1).readValue(x);
+
+    // Then Merged Name Is Expected
+    assertThat(merged.getDefinition().getName(), hasAllEntries(expected));
+
+  }
+
+  @Test
+  void whenMergingActivitiesWithActivityDefinitionsWithDescriptionsThenMergedDefinitionIsExpected()
+      throws IOException {
+
+    final var activity1 =
+        Activity.builder().definition(d -> d.addDescription(Locale.US, "flavor")).build();
+
+    final var x = objectMapper.valueToTree(
+        Activity.builder().definition(d -> d.addDescription(Locale.UK, "flavour")).build());
+
+    final var expected = new LanguageMap();
+    expected.put(Locale.UK, "flavour");
+    expected.put(Locale.US, "flavor");
+
+    // When Merging Activities With ActivityDefinitions With Descriptions
+    final var merged = (Activity) objectMapper.readerForUpdating(activity1).readValue(x);
+
+    // Then Merged Definition Is Expected
+    assertThat(merged.getDefinition().getDescription(), hasAllEntries(expected));
+
+  }
+
+  @Test
+  void whenMergingActivitiesWithActivityDefinitionsWithExtensionsThenMergedExtensionsAreExpected()
+      throws IOException {
+
+    final var activity1 = Activity.builder().definition(d -> d.extensions(new HashMap<>(
+        Collections.singletonMap(URI.create("https://example.com/extensions/a"), "a")))
+
+    ).build();
+
+    final var x = objectMapper.valueToTree(Activity.builder()
+        .definition(d -> d.extensions(new HashMap<>(
+            Collections.singletonMap(URI.create("https://example.com/extensions/b"), "b"))))
+        .build());
+
+    final Map<@HasScheme URI, Object> expected = new HashMap<>();
+    expected.put(URI.create("https://example.com/extensions/a"), "a");
+    expected.put(URI.create("https://example.com/extensions/b"), "b");
+
+    // When Merging Activities With ActivityDefinitions With Extensions
+    final var merged = (Activity) objectMapper.readerForUpdating(activity1).readValue(x);
+
+    // Then Merged Extensions Are Expected
+    assertThat(merged.getDefinition().getExtensions(), hasAllEntries(expected));
+
+  }
+
+  @Test
+  void whenValidatingActivityWithIdWithNoSchemeThenConstraintViolationsSizeIsOne() {
+
+    final var activity = Activity.builder()
+
+        .id(URI.create("www.example.com"))
+
+        .build();
+
+    // When Validating Activity With Id With No Scheme
+    final Set<ConstraintViolation<Activity>> constraintViolations = validator.validate(activity);
+
+    // Then Constraint Violations Size Is One
+    assertThat(constraintViolations.size(), is(1));
 
   }
 

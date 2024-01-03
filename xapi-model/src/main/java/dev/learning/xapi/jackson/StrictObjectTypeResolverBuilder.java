@@ -17,9 +17,10 @@ import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.impl.AsPropertyTypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
-import dev.learning.xapi.model.ObjectType;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 
 /**
  * Custom TypeResolverBuilder which accepts only valid strings as type identifiers.
@@ -41,16 +42,19 @@ public class StrictObjectTypeResolverBuilder extends StdTypeResolverBuilder {
   }
 
   /**
-   * Custom {@link AsPropertyTypeDeserializer} which accepts only valid {@link ObjectType} as
-   * property value.
+   * Custom {@link AsPropertyTypeDeserializer} which accepts only valid objectType as property
+   * value.
    */
   public static class StrictObjectTypePropertyDeserializer extends AsPropertyTypeDeserializer {
 
     private static final long serialVersionUID = 1139909729567678431L;
 
+    private static final HashSet<String> validObjectTypes = new HashSet<>(
+        Arrays.asList("Activity", "Agent", "Person", "Group", "SubStatement", "StatementRef"));
+
     public StrictObjectTypePropertyDeserializer(JavaType baseType, TypeIdResolver idRes,
         String typeProperty, boolean typeIdVisible, JavaType defaultImpl, As includeAs) {
-      super(baseType, idRes, typeProperty, typeIdVisible, defaultImpl, includeAs);
+      super(baseType, idRes, typeProperty, typeIdVisible, defaultImpl, includeAs, true);
     }
 
     public StrictObjectTypePropertyDeserializer(AsPropertyTypeDeserializer src,
@@ -68,7 +72,7 @@ public class StrictObjectTypeResolverBuilder extends StdTypeResolverBuilder {
         TokenBuffer tb, String typeId) throws IOException {
 
       // This is the actual custom logic.
-      if (ObjectType.getByValue(typeId).isEmpty()) {
+      if (!validObjectTypes.contains(typeId)) {
         throw new InvalidTypeIdException(p, "Invalid objectType", _baseType, typeId);
       }
       // Everything else is just unavoidable duplication of the original code.
